@@ -8,19 +8,238 @@ on:
   push:
     tags:
       - '*'
+
 jobs:
-  trigger-workflow:
-    uses: BrightLeaf-Digital/.github/.github/workflows/pcp-check.yml@main
-    with:
-      plugin_slug: 'folders-4-gravity'
-      deploy_to_wp: true
-      deploy_to_freemius: false
-      update_feed_item_key: 'f4g'
-      version: ${{ github.event.inputs.version }}
-      zip_files: 'assets includes vendor *.php readme.txt composer.json'
-    secrets:
-      BLD_API_KEY: ${{ secrets.BLD_API_KEY }}
-      UPDATE_FEED_URL: ${{ secrets.UPDATE_FEED_URL }}
-      WP_SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-      WP_SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-      SSH_PRIVATE_KEY_GRAVITYOPS_CORE: ${{ secrets.SSH_PRIVATE_KEY_GRAVITYOPS_CORE }}
+  pcp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_GRAVITYOPS_CORE }}
+
+      - name: Install Production Dependencies
+        run: |
+          composer config repositories.gravityops-local --unset
+          composer config minimum-stability stable
+          composer config prefer-stable true
+          CORE_VERSION=$(jq -r '.require["gravityops/core"]' composer.json)
+          composer require "gravityops/core:${CORE_VERSION}@stable" --update-no-dev --no-progress --optimize-autoloader --no-interaction
+
+      - name: Cleanup Vendor
+        run: |
+          find vendor -type f -name "*.sh" -delete
+          rm -f vendor/trustedlogin/client/bin/build-sass
+          rm -f vendor/bin/build-sass
+
+      - name: Prefix namespaces (Strauss)
+        run: composer run-script prefix-namespaces
+
+      - name: PCP
+        uses: wordpress/plugin-check-action@v1
+        with:
+          exclude-files: |
+            .gitignore
+            .wp-env.json
+          ignore-codes: 'WordPress.DateTime.RestrictedFunctions.date_date'
+
+  get_version:
+    needs: pcp
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Get version from tag or input
+        id: get_version
+        run: |
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="${INPUT_VERSION#v}"
+            echo "Using manual input version: $VERSION"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "${{ github.ref_type }}" != "tag" ]; then
+            echo "Not a tag run. Skipping."
+            exit 0
+          fi
+
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: [pcp, get_version]
+    if: ${{ needs.get_version.outputs.version && needs.get_version.outputs.version != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          tools: composer
+
+      - name: Setup SSH Agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY_GRAVITYOPS_CORE }}
+
+      - name: Install Production Dependencies
+        run: |
+          composer config repositories.gravityops-local --unset
+          composer config minimum-stability stable
+          composer config prefer-stable true
+          CORE_VERSION=$(jq -r '.require["gravityops/core"]' composer.json)
+          composer require "gravityops/core:${CORE_VERSION}@stable" --update-no-dev --no-progress --optimize-autoloader --no-interaction
+
+      - name: Cleanup Vendor
+        run: |
+          find vendor -type f -name "*.sh" -delete
+          rm -f vendor/trustedlogin/client/bin/build-sass
+          rm -f vendor/bin/build-sass
+
+      - name: Prefix namespaces (Strauss)
+        run: |
+          mkdir -p bin
+          curl -fSL https://github.com/BrianHenryIE/strauss/releases/download/0.27.0/strauss.phar -o bin/strauss.phar
+          php bin/strauss.phar
+          rm -rf bin
+          composer dump-autoload
+
+      - name: Prepare Plugin Directory for WP.org
+        run: |
+          mkdir plugin-dir
+          mkdir -p build
+          zip -r build/local-plugin.zip assets includes vendor *.php readme.txt composer.json
+          unzip build/local-plugin.zip -d plugin-dir
+
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
+      - name: Deploy to WordPress.org SVN
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          BUILD_DIR: plugin-dir
+          SLUG: folders-4-gravity
+          VERSION: ${{ needs.get_version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! -d "$BUILD_DIR" ]]; then
+            echo "Build directory '$BUILD_DIR' not found." >&2
+            exit 1
+          fi
+
+          SVN_URL="https://plugins.svn.wordpress.org/$SLUG"
+          echo "Deploying version $VERSION to $SVN_URL"
+
+          # Defensive cleanup in case any packaged files include SVN metadata.
+          find "$BUILD_DIR" -type d -name ".svn" -prune -exec rm -rf {} +
+
+          svn --version
+          svn checkout "$SVN_URL" wporg
+
+          rsync -rc --delete \
+            --exclude ".git" \
+            --exclude ".gitignore" \
+            --exclude ".github" \
+            --exclude ".DS_Store" \
+            --exclude "**/.git" \
+            "$BUILD_DIR"/ wporg/trunk/
+
+          cd wporg
+          svn cleanup . || true
+          svn update
+
+          # Add all new files and directories recursively.
+          svn add --force trunk --auto-props --parents
+
+          # Remove missing files safely; using substring parsing avoids status-column bugs.
+          while IFS= read -r missing_path; do
+            [[ -z "$missing_path" ]] && continue
+            svn rm --force "${missing_path}@"
+          done < <(svn status | awk 'substr($0,1,1)=="!" {print substr($0,9)}')
+
+          # Clear stale lock entries before committing.
+          while IFS= read -r locked_path; do
+            [[ -z "$locked_path" ]] && continue
+            svn cleanup "${locked_path}" || true
+          done < <(svn status | awk '(substr($0,1,1)=="L" || substr($0,3,1)=="L") {print substr($0,9)}')
+
+          svn status
+
+          if [[ -z "$(svn status)" ]]; then
+            echo "No SVN changes to commit."
+          else
+            attempts=0
+            until [ $attempts -ge 3 ]; do
+              if svn commit --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache -m "Release $VERSION"; then
+                echo "SVN trunk commit succeeded."
+                break
+              fi
+              attempts=$((attempts + 1))
+              if [ $attempts -ge 3 ]; then
+                echo "SVN commit failed after 3 attempts." >&2
+                exit 1
+              fi
+              echo "Commit failed, retrying in 20s... ($attempts/3)"
+              sleep 20
+              svn cleanup . || true
+              svn update
+            done
+          fi
+
+          TAG_URL="$SVN_URL/tags/$VERSION"
+          if svn ls "$TAG_URL" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists. Skipping tag creation."
+          else
+            svn copy "$SVN_URL/trunk" "$TAG_URL" \
+              --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache \
+              -m "Tagging $VERSION"
+            echo "Tagged $VERSION"
+          fi
+
+      - name: Notify Update Feed
+        run: |
+          VERSION="${{ needs.get_version.outputs.version }}"
+          CHANGELOG=$(sed -n "/= $VERSION.*=/,/= /p" readme.txt | sed '1d;$d' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr '\n' ' ' | sed 's/"/\\"/g')
+          curl -X POST ${{ secrets.UPDATE_FEED_URL }} \
+            -H "X-API-Key: ${{ secrets.BLD_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+            \"item_updated\": \"f4g\",
+            \"version\": \"$VERSION\",
+            \"changelog\": \"$CHANGELOG\"
+          }"
+
+      - name: Setup Pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Sync Documentation
+        run: |
+          if [ -d "docs" ]; then
+            echo "Processing documentation for folders-4-gravity..."
+            find docs -name "*.md" -exec sh -c 'sed "s/[[:space:]]*$//" "$1" | pandoc -f gfm -t html --wrap=none -o "$1.html"' _ {} \;
+            zip -r docs.zip docs/
+            curl -X POST "https://brightleafdigital.io/wp-json/bld/v1/sync-docs" \
+              -H "x-api-key: ${{ secrets.BLD_API_KEY }}" \
+              -F "plugin_slug=folders-4-gravity" \
+              -F "docs_zip=@docs.zip"
+          else
+            echo "No docs/ directory found. Skipping documentation sync."
+          fi
