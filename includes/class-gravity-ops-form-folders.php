@@ -367,11 +367,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
     public function gops_render_help() {
         SuiteCore::instance()->shell()->render_help_tab(
             [
-                'Learn More'             => 'https://brightleafdigital.io/folders-4-gravity/',
-                'Docs'                   => 'https://brightleafdigital.io/folders-4-gravity/#docs',
-                'Community forum'        => 'https://brightleafdigital.io/community/',
-                'Open a support request' => 'https://brightleafdigital.io/support/',
-                'Join the community'     => 'https://brightleafdigital.io/plugintomember',
+                'Learn More' => 'https://brightleafdigital.io/folders-4-gravity/',
             ]
         );
     }
