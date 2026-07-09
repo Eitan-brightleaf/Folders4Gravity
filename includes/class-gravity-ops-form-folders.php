@@ -211,15 +211,27 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
     }
 
     /**
-     * Retrieves the SVG icon for the application menu in a base64-encoded string.
+     * Icon shown next to the plugin's Gravity Forms settings tab.
      *
-     * The method generates an SVG icon XML, encodes it in base64, and formats it as a data URL
-     * suitable for use as an image source in web applications.
-     *
-     * @return string The base64-encoded SVG icon as a data URL.
+     * @return string
      */
-    public function get_app_menu_icon() {
+    public function get_menu_icon() {
         return SuiteCore::instance()->suite_menu()->get_plugin_icon_url( 'folders-4-gravity' ) ?: 'dashicons-portfolio';
+    }
+
+    /**
+     * Redirects the Gravity Forms settings tab to this plugin's GravityOps page.
+     *
+     * Defining this method makes Gravity Forms register the settings tab and its icon
+     * ( GFAddOn::has_plugin_settings_page() ); the override forwards the click to the
+     * dedicated GravityOps page rather than rendering a settings form here.
+     *
+     * @return void
+     */
+    public function plugin_settings_page() {
+        // redirect to overview page
+        wp_safe_redirect( esc_url_raw( admin_url( 'admin.php?page=folders-4-gravity' ) ) );
+        exit;
     }
 
     /**
