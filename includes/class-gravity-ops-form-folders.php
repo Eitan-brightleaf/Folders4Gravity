@@ -171,6 +171,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
                 'menu_title' => $this->_short_title,
                 'subtitle'   => '',
                 'links'      => [],
+                'docs_path'  => dirname( __DIR__ ) . '/docs',
                 'tabs'       => [
                     'overview'    => [
                         'label'    => 'Overview',
