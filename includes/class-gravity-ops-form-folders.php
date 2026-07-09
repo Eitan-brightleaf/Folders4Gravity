@@ -178,9 +178,8 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
                         'callback' => [ $this, 'gops_render_overview' ],
                     ],
                     'help'        => [
-                        'label'    => 'Help',
-                        'type'     => 'render',
-                        'callback' => [ $this, 'gops_render_help' ],
+                        'label' => 'Help',
+                        'type'  => 'help',
                     ],
                     'affiliation' => [
                         'label' => 'Affiliation',
@@ -371,17 +370,6 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
         }
         echo '</div>';
         echo '</div>';
-    }
-
-    /**
-     * Render: GravityOps → Folders → Help
-     */
-    public function gops_render_help() {
-        SuiteCore::instance()->shell()->render_help_tab(
-            [
-                'Learn More' => 'https://brightleafdigital.io/folders-4-gravity/',
-            ]
-        );
     }
 
     /**
