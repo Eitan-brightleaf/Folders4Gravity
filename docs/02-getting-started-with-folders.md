@@ -5,7 +5,7 @@
 Before you begin, you can find a high-level overview of your organized and unfiled forms and views by navigating to:
 - **GravityOps → Folders4Gravity → Overview**
 
-This page provides counts of filed vs. unfiled items and quick links to the management screens.
+This page provides counts of filed vs. unfiled items and quick links to the management screens. This documentation is also available right in your dashboard under the **Docs** tab of the same **GravityOps → Folders4Gravity** page.
 
 ### Step 1: Create Your First Folder
 
