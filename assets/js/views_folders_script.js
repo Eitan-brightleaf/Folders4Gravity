@@ -60,6 +60,8 @@ jQuery(($) => {
 	});
 
 	$('.update-view').on('click', function () {
+		const action = $(this).data('action');
+
 		// Show confirmation dialog for trash action
 		if (action === 'go_f4g_trash_view') {
 			if (
@@ -74,7 +76,6 @@ jQuery(($) => {
 		const urlParams = new URLSearchParams(window.location.search);
 		const folderID = urlParams.get('folder_id'); // could be null
 
-		const action = $(this).data('action');
 		const viewID = $(this).data('view-id');
 		const nonce = $(this).data('nonce');
 

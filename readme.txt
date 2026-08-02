@@ -2,8 +2,8 @@
 Contributors: eitanatbrightleaf
 Tags: gravity forms, folders, admin tools, organization, gravityview
 Requires at least: 6.5
-Tested up to: 6.9
-Stable tag: 1.0.9.1
+Tested up to: 7.0
+Stable tag: 1.1.0
 Requires PHP: 8.0
 License: GPLv2
 License URI: https://brightleafdigital.io/folders-4-gravity/
@@ -154,6 +154,16 @@ Yes. Folders4Gravity is intentionally lightweight, fast, and optimized for large
 
 == Changelog ==
 
+= 1.1.0 | Aug 2, 2026 =
+- Added a Docs tab so the full plugin documentation is available right inside your WordPress dashboard.
+- Added a Folders entry to the Gravity Forms settings menu that opens the Folders4Gravity page.
+- Added a form preview link that always works, using Gravity Wiz Live Preview or GF Dev Tools when either is available and falling back to the built-in Gravity Forms preview.
+- Fixed the copy shortcode button copying extra whitespace instead of just the shortcode.
+- Refreshed the Help tab with documentation, community, and support links.
+- Improved the GravityOps dashboard with per-plugin icons, correct changelog links, update checks that no longer hold up the page, and a fix for opening a plugin right after activating it.
+- Individual plugin pages are no longer listed in the WordPress admin sidebar; open them from the GravityOps dashboard instead.
+- Updated the core GravityOps library for more reliable support access, interface fixes that are no longer served from a stale cache, and other small fixes.
+
 = 1.0.9.1 | Feb 19, 2026 =
 - Fixed a bug showing update versions for uninstalled plugins.
 
@@ -168,9 +178,6 @@ Yes. Folders4Gravity is intentionally lightweight, fast, and optimized for large
 
 = 1.0.7 =
 - Fixed a critical error caused by last release
-
-= 1.0.6 =
-- Fixed a bug with new admin menu
 
 
 == Upgrade Notice ==
