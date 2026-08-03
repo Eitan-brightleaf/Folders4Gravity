@@ -154,13 +154,12 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		$review_prompter->init();
 		$review_prompter->maybe_show_review_request( $this->get_usage_count(), 10 );
 
-        $survey_prompter = SuiteCore::instance()->survey_prompter(
+        SuiteCore::instance()->register_survey_product(
 			$this->prefix,
 			$this->_title,
 			$this->_version,
 			'free'
 		);
-        $survey_prompter->init();
 
         // Register the GravityOps AdminShell page for the free Folders plugin.
         // Tabs: Overview (render), Help (render), Affiliation (external link)
@@ -644,7 +643,6 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 
 		delete_option( "{$this->prefix}folder_order" );
 		delete_option( "{$this->prefix}review_prompter_usage_count" );
-		delete_option( "{$this->prefix}survey_status" );
     }
 
     /**
