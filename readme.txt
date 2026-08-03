@@ -3,7 +3,7 @@ Contributors: eitanatbrightleaf
 Tags: gravity forms, folders, admin tools, organization, gravityview
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 8.0
 License: GPLv2
 License URI: https://brightleafdigital.io/folders-4-gravity/
@@ -154,6 +154,11 @@ Yes. Folders4Gravity is intentionally lightweight, fast, and optimized for large
 
 == Changelog ==
 
+= 1.1.1 | Aug 3, 2026 =
+- GravityOps now asks for one short suite-wide survey instead of one survey per plugin, using a compact invitation and a dedicated dashboard form.
+- Closing a survey or review prompt now saves "not interested" immediately without reloading the page.
+- Fixed release packaging so distributed builds include the correct plugin files and dependencies.
+
 = 1.1.0 | Aug 2, 2026 =
 - Added a Docs tab so the full plugin documentation is available right inside your WordPress dashboard.
 - Added a Folders entry to the Gravity Forms settings menu that opens the Folders4Gravity page.
@@ -175,10 +180,6 @@ Yes. Folders4Gravity is intentionally lightweight, fast, and optimized for large
 = 1.0.8 =
 - Improved styling and UI to match branding
 - Bumped version of core GravityOps library to fix some bugs regarding the plugin admin menus and integrate [TrustedLogin](https://www.trustedlogin.com/about/easy-and-safe/)
-
-= 1.0.7 =
-- Fixed a critical error caused by last release
-
 
 == Upgrade Notice ==
 Adds confirmation before trashing forms or views and allows re-organizing folders. Update now for improved safety and smoother folder management.
