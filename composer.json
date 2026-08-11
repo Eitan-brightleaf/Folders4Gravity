@@ -49,7 +49,8 @@
         "file_patterns": [
           "(^|/)\\.git(/|$)",
           "(^|/)\\.github(/|$)",
-          "\\.git(ignore|modules|attributes)$"
+          "\\.git(ignore|modules|attributes)$",
+          "(^|/)tests(/|$)"
         ]
       }
     }
@@ -59,15 +60,5 @@
       "gravityops/core": "source",
       "*": "dist"
     }
-  },
-  "scripts": {
-    "prefix-namespaces": [
-      "@php -r \"if (!file_exists('bin')) { mkdir('bin', 0755, true); }\"",
-      "@php -r \"if (!file_exists('bin/strauss.phar')) { file_put_contents('bin/strauss.phar', file_get_contents('https://github.com/BrianHenryIE/strauss/releases/latest/download/strauss.phar')); }\"",
-      "@php bin/strauss.phar",
-      "@php -r \"unlink('bin/strauss.phar');\"",
-      "@php -r \"if (is_dir('bin')) rmdir('bin');\"",
-      "@composer dump-autoload"
-    ]
   }
 }
