@@ -10,7 +10,7 @@ on:
       - '*'
 jobs:
   trigger-workflow:
-    uses: BrightLeaf-Digital/.github/.github/workflows/pcp-check.yml@main
+    uses: BrightLeaf-Digital/.github/.github/workflows/deploy.yml@main
     with:
       deploy_to_wp: true
       deploy_to_freemius: false
